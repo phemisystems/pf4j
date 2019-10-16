@@ -18,6 +18,7 @@ package org.pf4j;
 import org.pf4j.processor.LegacyExtensionStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.net.www.protocol.jar.Handler;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -104,8 +105,12 @@ public class LegacyExtensionFinder extends AbstractExtensionFinder {
         while (urls.hasMoreElements()) {
             URL url = urls.nextElement();
             log.debug("Read '{}'", url.getFile());
-            URLConnection connection = url.openConnection();
-            // set useCaches to false so that the connection doesn't hold up the file
+            /*
+              Spring JarLauncher has a dependency on org.springframework.boot.loader.jar.JarURLConnection and it
+              holds up the file. Force it to use sun.net.www.protocol.jar.JarURLConnection.
+             */
+            URLConnection connection = new sun.net.www.protocol.jar.JarURLConnection(url, new Handler());
+            // set useCaches to false so that the connection doesn't hold up the file.
             connection.setUseCaches(false);
             try (Reader reader = new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)) {
                 LegacyExtensionStorage.read(reader, bucket);
